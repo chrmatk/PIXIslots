@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="js/pixi.min.js"></script>
+    <script>
+        let app;
+        let machine;
+
+        window.onload = function (){
+                
+            app = new PIXI.Application (
+                {
+                    width:800,
+                    height:600,
+                    backgroundColor: 0xAAAA8A
+                }
+            );
+            document.body.appendChild(app.view);
+            
+            //preload assets
+            app.loader.baseUrl = "images";
+            app.loader
+                .add("frame","SMFrame_blank.png")
+                .add("bell","bell.png")
+                .add("cherries","cherries.png")
+                .add("clover","clover.png")
+                .add("heart","heart.png")
+                .add("horseshoe","horseshoe.png")
+                .add("lemon","lemon.png")
+                .add("melon","melon.png")
+                .add("seven","seven.png")
+                .add("spinBtn","spin.png")
+                .add("spinPressed","spin_pressed.png")
+                .add("bet","bet.png")
+                .add("betPressed","bet_pressed.png")
+                .load(onAssetsLoaded);
+
+                const REEL_WIDTH = 75;
+            
+            function onAssetsLoaded(){
+                machine = new PIXI.Sprite.from("frame");
+                machine.anchor.set(0.5);
+                machine.x = app.view.width / 2;
+                machine.y = app.view.height / 2;
+                
+                app.stage.addChild(machine);
+
+                //create slot symbols
+                let  symbolsTextures = [
+                    PIXI.Texture.from("bell"),
+                    PIXI.Texture.from("cherries"),
+                    PIXI.Texture.from("clover"),
+                    PIXI.Texture.from("heart"),
+                    PIXI.Texture.from("horseshoe"),
+                    PIXI.Texture.from("lemon"),
+                    PIXI.Texture.from("melon"),
+                    PIXI.Texture.from("seven")
+                ];
+                
+
+                //Create reels arrays and fill with symbols
+                const reels = [];
+                let symbols = [];
+                for (let i=0; i<3; i++){
+                    const reelContainer = new PIXI.Container();
+                    reelContainer.mask = new PIXI.Graphics()
+                            .beginFill(0xffffff)
+                            .drawRect(machine.x-105,machine.y-44,250,66)
+                            .endFill();
+
+                    reelContainer.x = machine.x + (i* REEL_WIDTH) - REEL_WIDTH;
+                    reelContainer.y = machine.y -10;
+                    symbolsTextures = shuffle(symbolsTextures);
+                    for (let k=0; k<8; k++){
+                        const tempSprite = new PIXI.Sprite(symbolsTextures[k]);
+                        tempSprite.anchor.set(0.5);
+                        tempSprite.x = 0;
+                        tempSprite.y = (k-7)*60 + 2; //2 is the margin
+                        symbols.push(tempSprite);
+                        reelContainer.addChild(tempSprite);
+                    }
+                    
+                    const reel = {
+                        container : reelContainer,
+                        symbols : symbols,
+                    };
+                    symbols = [];
+                    reels.push(reel);
+                    app.stage.addChild(reelContainer);
+                }
+                let running=false;
+                //Spin button
+                const spinBtn = new PIXI.Sprite.from("spinBtn");
+                spinBtn.anchor.set(0.5);
+                spinBtn.x = machine.x +16;
+                spinBtn.y = machine.y + 36;
+                app.stage.addChild(spinBtn);
+                spinBtn.interactive = true;
+                spinBtn.buttonMode = true;
+                spinBtn.addListener('pointerdown', () => {
+                    if (running) running=false;
+                    else{
+                        running=true;
+                        spinIt();
+                        spinBtn.texture = PIXI.Texture.from("spinPressed");
+                    }
+                })
+
+                app.ticker.add(spinIt);
+
+                let roundsCounter = [0,0,0];
+                function spinIt(){
+                    if (!running) return;
+                    for (let i=0 ; i<3 ; i++){
+                        if (roundsCounter[i]>9 && i==0) continue;
+                        if (roundsCounter[i]>20 && i==1) continue;
+                        if (roundsCounter[i]>34 && i==2) continue;
+                        
+                        
+                        for(let k=0 ; k<8 ; k++){
+                            reels[i].symbols[k].y = reels[i].symbols[k].y + (i+1)*2 +3;
+                            if (reels[i].symbols[k].y > 60) {
+                                reels[i].symbols[k].y= -420;
+                                roundsCounter[i]++;
+                            }
+                            
+                        }
+                    }
+                    if (roundsCounter[2]>34){
+                        running=false;
+                        spinBtn.texture = PIXI.Texture.from("spinBtn");
+                        roundsCounter = [0,0,0];
+                    }
+
+                }
+            }
+        }
+
+        function shuffle(array) {
+            var currentIndex = array.length, temporaryValue, randomIndex;
+
+            // While there remain elements to shuffle...
+            while (0 !== currentIndex) {
+
+                // Pick a remaining element...
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex -= 1;
+
+                // And swap it with the current element.
+                temporaryValue = array[currentIndex];
+                array[currentIndex] = array[randomIndex];
+                array[randomIndex] = temporaryValue;
+            }
+
+            return array;
+        }
+    </script>
+</head>
+<body>
+    
+</body>
+</html>
